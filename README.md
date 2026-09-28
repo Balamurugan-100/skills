@@ -122,39 +122,73 @@ The first ten are [Conventional Commits 1.0.0](https://www.conventionalcommits.o
 
 ## Deploying
 
-**This repo is the source of truth.** Every skill is published as a symlink into each agent's skills directory, so an edit here is live everywhere with no copy step. Run these from the repo root:
+**This repo is the source of truth.** Every skill is published as a symlink into each agent's skills directory, so an edit here is live everywhere with no copy step.
+
+OpenCode is the exception — it needs no symlinks at all. Register the directory once in `~/.config/opencode/opencode.json`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "skills": ["/Users/bala/workspace/personal/skills"]
+}
+```
+
+`skills` entries register at the highest precedence, so this repo wins over any compatibility root (`~/.claude/skills`, `~/.agents/skills`) that later drifts or goes stale. The loop below still publishes to all six roots — OpenCode no longer *depends* on the two roots it also reads for compatibility, but other harnesses do. Run it from the repo root:
 
 ```bash
+REPO=$(pwd -P)
+relpath() { python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$1" "$2"; }
+
+for root in ~/.agents/skills ~/.claude/skills ~/.gemini/skills \
+            ~/.gemini/config/skills ~/.gemini/antigravity/skills ~/.codex/skills; do
+  mkdir -p "$root"
+  for skill in */; do
+    skill=${skill%/}
+    [ -f "$skill/SKILL.md" ] || continue
+    [ -e "$root/$skill" ] || ln -s "$(relpath "$REPO/$skill" "$root")" "$root/$skill"
+  done
+  for link in "$root"/*/; do                      # prune what this repo retired
+    link=${link%/}; name=${link##*/}
+    [ -L "$link" ] || continue                   # a real directory is not ours to remove
+    [ -d "$REPO/$name" ] || { echo "prune $link"; rm "$link"; }
+  done
+done
+```
+
+**Targets are relative on purpose.** A relative link resolves against the directory that holds it, so `~/.claude/skills/commit -> ../../workspace/personal/skills/commit` lands in the repo regardless of your shell's working directory, and keeps working if the home directory or the repo moves. Absolute targets buy nothing here.
+
+The loop is idempotent — `[ -e ]` skips anything already published, so re-running it only adds what is missing. It never overwrites: if a real directory already occupies a name, the link is skipped rather than clobbered. To replace one deliberately, remove the target first.
+
+The prune pass is what stops a retired skill from lingering as a dangling link, which most harnesses surface as a broken skill rather than ignoring. It only unlinks symlinks whose target name is gone from this repo, so skills owned by other installers in the same root — `diataxis` and `graphify` in the Gemini roots — are left alone, as is `.ownit` in `~/.agents/skills`, which the `*/` glob never sees.
+
+**Check what a consumer actually sees.** A root that has silently degraded from a symlink to a real copy still *serves* correct-looking content, so check the mechanism, not just the presence:
+
+```bash
+REPO=$(pwd -P)
 for root in ~/.agents/skills ~/.claude/skills ~/.gemini/skills \
             ~/.gemini/config/skills ~/.gemini/antigravity/skills ~/.codex/skills; do
   for skill in */; do
     skill=${skill%/}
     [ -f "$skill/SKILL.md" ] || continue
-    mkdir -p "$root"
-    [ -e "$root/$skill" ] || ln -s "$(cd "$skill" && pwd -P)" "$root/$skill"
+    printf '%-30s %-20s ' "${root/#$HOME/\~}" "$skill"
+    if [ -L "$root/$skill" ]; then
+      got=$(cd "$root" && cd "$(readlink "$root/$skill")" 2>/dev/null && pwd -P)
+      [ "$got" = "$REPO/$skill" ] && echo "link -> repo" || echo "BROKEN LINK"
+    elif [ -d "$root/$skill" ]; then
+      diff -rq "$skill" "$root/$skill" >/dev/null 2>&1 \
+        && echo "copy (in sync, NOT live)" || echo "copy (DRIFTED, not live)"
+    else
+      echo "MISSING"
+    fi
   done
 done
 ```
 
-Absolute targets are deliberate: they keep working from any shell's working directory, and a relative link inside `~/.agents/skills` would resolve against that directory rather than the repo.
-
-The loop is idempotent — `[ -e ]` skips anything already published, so re-running it only adds what is missing. It never overwrites: if a real directory already occupies a name, the link is skipped rather than clobbering it. To replace one deliberately, remove the target first.
-
-Three of the six roots (`~/.claude`, `~/.gemini`, `~/.gemini/config`) already link into `~/.agents/skills` for the Grafana suite, so they have two hops to reach this repo. That is fine — resolution is resolution, and it keeps the Grafana skills where their installers put them.
-
-**Check what a consumer actually sees:**
-
-```bash
-for skill in */; do
-  skill=${skill%/}
-  [ -f "$skill/SKILL.md" ] || continue
-  printf '%-22s %s\n' "$skill" "$(readlink ~/.agents/skills/$skill || echo 'NOT LINKED')"
-done
-```
+Only `link -> repo` is correct. A `copy` is a frozen snapshot: edits in this repo stop reaching that harness with no error anywhere, which is exactly the failure the symlink design exists to prevent.
 
 ### Adding or retiring a skill
 
-To add: create the directory here, then rerun the deploy loop. To retire: delete the directory here and unlink it from every root. Deleting only in the repo leaves a dangling link, which most harnesses surface as a broken skill rather than ignoring.
+To add: create the directory here, then rerun the deploy loop. To retire: delete the directory here and rerun the loop — the prune pass unlinks it from every root. Doing nothing but deleting locally leaves a dangling link, which most harnesses surface as a broken skill rather than ignoring.
 
 Eight skills were retired from the global set on the same reasoning as the five cut from this repo — `tdd`, `domain-modeling`, `improve-codebase-architecture`, `resolving-merge-conflicts`, `research`, plus `grilling` and `grill-with-docs` (both superseded by `grill-me`) and `conventional-commits` (subsumed by `commit`). They were removed from all six roots, not just `~/.agents/skills`, so no dangling links remain. The Grafana/observability suite was left untouched.
 
