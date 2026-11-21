@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SRC_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+AGENTS_SRC="$SRC_DIR/AGENTS.md"
 HOME_DIR="${HOME:?HOME is not set}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME_DIR/.config}"
 
@@ -29,14 +30,15 @@ Options:
   -h, --help       Show this help.
 
 Global destinations:
-  codex        ~/.agents/skills
-  antigravity  ~/.gemini/config/skills
-  opencode     ~/.config/opencode/skills
+  codex        ~/.agents/skills, ~/.codex/AGENTS.md
+  antigravity  ~/.gemini/config/skills, ~/.gemini/AGENTS.md
+  opencode     ~/.config/opencode/skills, ~/.config/opencode/AGENTS.md
                (this repo is also added to opencode.json's skills array,
                 because explicit config entries take precedence)
 
 Project destination (shared by all three):
   <project>/.agents/skills
+  AGENTS.md is global only; project scope does not install it.
 EOF
 }
 
@@ -90,6 +92,37 @@ same_path() {
   a="$(realpath "$1" 2>/dev/null || printf '%s' "$1")"
   b="$(realpath "$2" 2>/dev/null || printf '%s' "$2")"
   [ "$a" = "$b" ]
+}
+
+install_agents_file() {
+  local agent="$1" target
+  [ -f "$AGENTS_SRC" ] || die "shared AGENTS.md not found: $AGENTS_SRC"
+
+  case "$agent" in
+    codex)       target="$HOME_DIR/.codex/AGENTS.md" ;;
+    antigravity) target="$HOME_DIR/.gemini/AGENTS.md" ;;
+    opencode)    target="$CONFIG_HOME/opencode/AGENTS.md" ;;
+  esac
+
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    if same_path "$target" "$AGENTS_SRC"; then
+      printf '    = %s (already from this repo)\n' "$target"
+      return
+    fi
+    if [ "$FORCE" -eq 0 ]; then
+      printf '    ! %s exists elsewhere (use --force to replace)\n' "$target" >&2
+      return
+    fi
+    if [ "$DRY_RUN" -eq 0 ]; then
+      rm -f -- "$target"
+    fi
+  fi
+
+  if [ "$DRY_RUN" -eq 0 ]; then
+    mkdir -p -- "$(dirname -- "$target")"
+    ln -s -- "$AGENTS_SRC" "$target"
+  fi
+  printf '    + %s\n' "$target"
 }
 
 install_to() {
@@ -214,9 +247,11 @@ printf 'Source: %s\nScope: %s%s\n' \
 
 if [ "$SCOPE" = project ]; then
   install_to "$PROJECT_DIR/.agents/skills"
+  printf '\n==> Shared AGENTS.md\n    = global scope only; skipping for project scope\n'
 else
   for agent in "${SELECTED[@]}"; do
     install_to "$(target_for "$agent")"
+    install_agents_file "$agent"
   done
   for agent in "${SELECTED[@]}"; do
     if [ "$agent" = opencode ]; then
