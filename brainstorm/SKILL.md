@@ -1,6 +1,6 @@
 ---
 name: brainstorm-before-build
-description: Use the moment the dev asks to start a fix, feature or enhancement, before any implementation begins. Run a short, conversational brainstorm (success criteria, cause, fix) where the dev answers first and the agent corrects, then agree a brief plan and implement. Skip for trivial changes or when the dev says to just do it.
+description: Use by default for any fix, feature or enhancement before implementation. Load this skill first even for small or unclear-size tasks, agree success criteria, cause and fix with the dev, then implement. Skip only on an explicit "just do it" or "skip the brainstorm", or when the request is a question rather than a change.
 ---
 
 # Brainstorm Before Build
@@ -16,11 +16,10 @@ This is a conversation, not a plan generator. Never hand the dev a massive plan.
 Start when the dev asks for a fix, feature or enhancement. The dev can describe it in plain text; fix or feature makes no difference, since a feature just has a missing piece where a fix has a bug.
 
 Do not run the full flow when:
-- The change is trivial (typo, rename, copy change, small config tweak). Just do it.
 - The dev says "just do it" or "skip the brainstorm". Respect it and move on; that call is theirs.
 - The dev is asking a question or wants an explanation, not a change.
 
-For small or unclear-size tasks, ask once: "Brainstorm this first, or just do it?" and follow the answer. Use the full flow for risky work: shared libraries, public SDK APIs, DRM or auth, migrations, infrastructure, anything hard to roll back.
+For small or unclear-size tasks, use the light version below instead of skipping. Use the full flow for risky work: shared libraries, public SDK APIs, DRM or auth, migrations, infrastructure, anything hard to roll back.
 
 ## Ground rules
 
@@ -58,7 +57,7 @@ Keep the agreed recap available. If the dev later does a PR walkthrough, the gap
 
 ## Light version
 
-For small tasks the dev chose to brainstorm: restate the problem and success criteria in one turn, ask for their cause and fix in a single question, give a verdict, then a two-line recap before building.
+For small tasks, use this instead of skipping: restate the problem and success criteria in one turn, ask for their cause and fix in a single question, give a verdict, then a two-line recap before building.
 
 ## Anti-patterns
 
@@ -66,5 +65,5 @@ For small tasks the dev chose to brainstorm: restate the problem and success cri
 - Revealing your own cause or fix before the dev has answered.
 - Sending the dev to hunt for answers when they said they do not know.
 - Agreeing with everything, or arguing with everything.
-- Running the full flow on a trivial change.
+- Running the full flow on a small task instead of the light version.
 - Silently deviating from the agreed plan during implementation.
