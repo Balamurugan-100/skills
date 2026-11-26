@@ -20,6 +20,7 @@ General rules for any coding agent. Keep this file tool-neutral and project-neut
 - For small tasks, use the light version: two or three sentences covering the cause and the proposed fix, then wait for approval.
 - Skip the brainstorm for mechanical edits (typos, renames, formatting, copy changes, and obvious one-line fixes), when the user says "just do it", "just fix it", or "skip the brainstorm", or when the request is a question rather than a change. In those cases, make the right-shaped fix first and explain it afterward. If you take a shortcut, say so.
 - Explain trade-offs and give one recommended approach before large changes.
+- After brainstorming (when ready to implement), ask whether to proceed in **auto mode** (normal implementation) or **manual mode** (follow the `build-with-me` skill, one approved edit at a time), unless the user already chose or skipped the brainstorm.
 
 ## After completing a task
 
