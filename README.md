@@ -12,6 +12,7 @@ Personal collection of agent skills and standing guidelines (`AGENTS.md`) for Co
 
 ```bash
 ./install.sh            # Symlink all skills and AGENTS.md globally
+./reset.sh              # Clear existing installed skills, then re-run install.sh
 ./install.sh --dry-run  # Preview changes
 ./install.sh --help     # Options (--agent, --scope project, --force)
 ```
@@ -20,15 +21,11 @@ Personal collection of agent skills and standing guidelines (`AGENTS.md`) for Co
 
 | Skill | Purpose |
 | :--- | :--- |
-| [autofix](autofix/SKILL.md) | Review and apply CodeRabbit PR feedback with per-change approval |
+| [basecamp](basecamp/SKILL.md) | Interact with Basecamp projects, todos, messages, cards, and files |
 | [brainstorm](brainstorm/SKILL.md) | Agree on success criteria, cause, and fix before writing code |
 | [build-with-me](build-with-me/SKILL.md) | Manual-only mentored mode: one approved logical edit at a time |
-| [code-review](code-review/SKILL.md) | Run CodeRabbit CLI reviews and interpret output |
 | [codebase-design](codebase-design/SKILL.md) | Vocabulary and principles for designing deep modules |
 | [diagnosing-bugs](diagnosing-bugs/SKILL.md) | Structured diagnosis loop for hard bugs and performance regressions |
-| [diataxis](diataxis/SKILL.md) | Classify, write, and audit docs using the Diátaxis framework |
-| [feature-audit](feature-audit/SKILL.md) | Audit an existing feature against what it should do |
-| [find-skills](find-skills/SKILL.md) | Discover and install skills from the agent skills ecosystem |
 | [pr-learning-walkthrough](pr-learning-walkthrough/SKILL.md) | Interactive walkthrough of agent-written changes before a PR |
 | [skill-gap-discovery](skill-gap-discovery/SKILL.md) | Spot recurring domain gaps and suggest candidate skills |
 | [spec-driven-implementation](spec-driven-implementation/SKILL.md) | Write and maintain `PRODUCT.md` and `TECH.md` for large features |
